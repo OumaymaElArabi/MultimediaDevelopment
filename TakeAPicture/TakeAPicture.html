@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Take a picture</title>
+    <style>
+        #parent,
+        #can {
+
+            position: relative;
+            width: 400px;
+            height: 300px;
+
+        }
+
+        #timer {
+            position: absolute;
+            font-size: 50px;
+            z-index: 2;
+            right: 5px;
+
+        }
+
+        #cadre {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            filter: brightness(100%);
+            border: 2px dotted gray;
+            display: none;
+        }
+
+        .corner {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: black;
+        }
+
+        .tl {
+            top: 0;
+            left: 0;
+            cursor: nwse-resize;
+
+        }
+
+        .tr {
+            top: 0;
+            right: 0;
+            cursor: nesw-resize;
+
+        }
+
+        .br {
+            bottom: 0;
+            right: 0;
+            cursor: nwse-resize;
+
+        }
+
+        .bl {
+            bottom: 0;
+            left: 0;
+            cursor: nesw-resize;
+
+        }
+
+        .tc {
+            top: 0;
+            left: 50%;
+            cursor: ns-resize;
+
+        }
+
+        .bc {
+            bottom: 0;
+            left: 50%;
+            cursor: ns-resize;
+
+        }
+
+        .lc {
+            top: 50%;
+            left: 0;
+            cursor: ew-resize;
+
+        }
+
+        .rc {
+            top: 50%;
+            right: 0;
+            cursor: ew-resize;
+        }
+
+        #video {
+            position: absolute;
+        }
+
+        #capture {
+            z-index: 2;
+            position: absolute;
+            bottom: 2px;
+            left: calc(50% - 35px);
+        }
+
+        footer{
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+
+        }
+    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+
+
+    <div style="display: flex;align-items: center;justify-content: center; flex-direction: column">
+        <div id="parent">
+            <canvas style="display: none" id="can" width="400" height="300"></canvas>
+            <video autoplay width="400" height="300" id="video">
+                <source>
+                </source>
+            </video>
+            <div id="timer">
+                3
+            </div>
+            <div id='cadre'>
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+
+                <div class="corner tc"></div>
+                <div class="corner bc"></div>
+                <div class="corner lc"></div>
+                <div class="corner rc"></div>
+            </div>
+            <button id="capture" type="button" class="btn btn-outline-info font-weight-bold" >Say cheese & click!</button>
+        </div>
+        <div style="display: none" id="slider">
+            <div style="display: flex; padding: 20px ">
+                <table style="margin: 10px">
+                    <tr>
+                        <td>Brightness :</td>
+                        <td><input oninput="brightness(this)" type="range" min="0" max="200" step="10" value="100" />
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>Contrast :</td>
+                        <td><input oninput="contrast(this)" type="range" min="0" max="200" step="10"
+                                value="100" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Saturation :</td>
+                        <td><input oninput="saturation(this)" type="range" min="0" max="200" step="10"
+                                value="100" />
+                        </td>
+                    </tr>
+
+                </table>
+
+                <div style="display: flex; flex-direction: column;margin: 10px">
+                    <button class="btn btn-outline-primary btn-sm" onclick="reessayer()">Retry</button>
+                    <a class="btn btn-outline-primary btn-sm" id="telecharger" href="#"
+                        download="image.png">Download</a>
+                    <button class="btn btn-outline-primary btn-sm" onclick="showCrop(true)">Show Crop</button>
+
+                    <button class="btn btn-outline-primary btn-sm" onclick='crop()'>Crop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div style="font-size: 20px"  class="text-center py-3 text-info">Copyright&copy;2019 EL ARABI OUMAYMA, GLSID2, 2018/2019 </div>
+    </footer>
+    <script>
+        var count = 3;
+
+        function reessayer() {
+            this.canvas.style.display = 'none';
+            //this.telecharger.style.display = 'block';
+            this.slider.style.display = 'none';
+            this.capture.style.display = 'block';
+            this.video.style.display = 'block';
+            this.timer.style.display = 'block';
+            count = 3;
+            this.timer.innerText = 3;
+        }
+
+        function showCrop(bool) {
+            if (bool) {
+                document.getElementById('cadre').style.display = 'block';
+            } else {
+                document.getElementById('cadre').style.display = 'none';
+            }
+        }
+
+        function setup() {
+            this.image = null;
+            this.slider = document.getElementById('slider');
+            this.canvas = document.querySelector('#can')
+            this.video = document.querySelector('#video');
+            this.timer = document.querySelector('#timer');
+            this.capture = document.querySelector('#capture')
+            this.telecharger = document.querySelector('#telecharger')
+            this.ctx = this.canvas.getContext('2d')
+            this.canvas.width = this.video.width
+            this.canvas.height = this.video.height
+            loadCamera()
+            this.video.addEventListener('play', _ => {
+                this.capture.addEventListener('click', _ => {
+                    anim();
+                    resize();
+                })
+            })
+
+        }
+
+
+        async function loadCamera() {
+            this.video = document.querySelector('#video');
+            let stream
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true })
+                this.video.srcObject = stream
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+
+        function getImage() {
+            // this.image = this.video;
+
+
+            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height)
+            image = new Image();
+            image.src = canvas.toDataURL();
+            this.canvas.style.display = 'block';
+            //this.telecharger.style.display = 'block';
+            this.slider.style.display = 'block';
+            this.capture.style.display = 'none';
+            this.video.style.display = 'none';
+            this.timer.style.display = 'none';
+
+        }
+
+        function anim() {
+            if (count >= 0) {
+                this.timer.innerText = count;
+                count--;
+                setTimeout(anim, 1000);
+            } else {
+                getImage();
+            }
+
+        }
+
+        this.telecharger.addEventListener('click', _ => {
+            download();
+        })
+
+        function download() {
+            this.imgBase64 = this.canvas.toDataURL()
+            this.image = new Image()
+            this.image.src = this.imgBase64
+            console.log(this.image)
+            var a = document.createElement("a")
+            var url = this.image.src.replace(/^data:image\/[^;]+/, 'data:application/octet-stream');
+            this.telecharger.href = this.image.src;
+            a.download = "image.png";
+            console.log(a);
+            // window.open(url, "image.png");
+        }
+        var v_brightness = 100, v_contrast = 100, v_saturation = 100;
+
+        function brightness(e) {
+            v_brightness = e.value;
+            this.ctx.filter = "brightness(" + v_brightness + "%) contrast(" + v_contrast + "%) saturate(" + v_saturation + "%)";
+            console.log(e.value);
+            this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height)
+
+        };
+        function contrast(e) {
+            v_contrast = e.value;
+            this.ctx.filter = "brightness(" + v_brightness + "%) contrast(" + v_contrast + "%) saturate(" + v_saturation + "%)";
+            console.log(e.value);
+            this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height)
+
+        };
+        function saturation(e) {
+            v_saturation = e.value;
+            this.ctx.filter = "brightness(" + v_brightness + "%) contrast(" + v_contrast + "%) saturate(" + v_saturation + "%)";
+            console.log(e.value);
+            this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height)
+
+        };
+        setup();
+
+        function valueInCss(parent, str) {
+            const value = parseFloat(getComputedStyle(parent, null).getPropertyValue(str).replace('px', ''));
+            return value;
+        }
+        function minmaxvalue(val, min, max) {
+            if (val < min)
+                val = min;
+            if (val > max)
+                val = max
+            return val;
+        }
+        function crop() {
+            let elm = document.getElementById('cadre');
+            this.ctx.drawImage(this.image, valueInCss(elm, 'left'), valueInCss(elm, 'top'), valueInCss(elm, 'width'), valueInCss(elm, 'height'), 0, 0, this.canvas.width, this.canvas.height);
+            this.image = new Image();
+            this.image.src = canvas.toDataURL();
+            showCrop(false);
+        }
+
+
+        function resize() {
+            let original_width = 0;
+            let original_height = 0;
+            let original_x = 0;
+            let original_y = 0;
+            let original_mouse_x = 0;
+            let original_mouse_y = 0;
+            let element = document.getElementById('cadre');
+            const parent = document.getElementById('parent');
+            const resizers = document.querySelectorAll(' .corner')
+
+            for (let i = 0; i < resizers.length; i++) {
+                const corners = resizers[i];
+                corners.addEventListener('mousedown', function (e) {
+                    e.preventDefault()
+                    original_width = valueInCss(element, 'width');
+                    original_height = valueInCss(element, 'height');
+                    original_x = valueInCss(element, 'left');
+                    original_y = valueInCss(element, 'top');
+                    original_mouse_x = e.pageX;
+                    original_mouse_y = e.pageY;
+                    window.addEventListener('mousemove', rz)
+                    window.addEventListener('mouseup', stoprz)
+                })
+
+                function rz(e) {
+                    if (corners.classList.contains('br')) {
+                        const new_width = original_width + (e.pageX - original_mouse_x)
+                        const new_height = original_height + (e.pageY - original_mouse_y)
+                        element.style.width = new_width + 'px';
+                        element.style.height = new_height + 'px';
+                        element.style.maxWidth = (valueInCss(parent, 'width') - original_x) + 'px';
+                        element.style.maxHeight = (valueInCss(parent, 'height') - original_y) + 'px';
+                    } else if (corners.classList.contains('bl')) {
+                        const new_width = original_width - (e.pageX - original_mouse_x)
+                        const new_height = original_height + (e.pageY - original_mouse_y)
+                        const new_x = original_x + (e.pageX - original_mouse_x)
+                        element.style.width = new_width + 'px';
+                        element.style.height = new_height + 'px';
+                        element.style.left = new_x + 'px';
+                    }
+                    else if (corners.classList.contains('tr')) {
+                        const new_width = original_width + (e.pageX - original_mouse_x)
+                        const new_height = original_height - (e.pageY - original_mouse_y)
+                        const new_y = original_y + (e.pageY - original_mouse_y)
+                        element.style.width = new_width + 'px';
+                        element.style.height = new_height + 'px';
+                        element.style.top = minmaxvalue(new_y, 0, valueInCss(parent, 'width')) + 'px';
+                        element.style.maxHeight = (valueInCss(parent, 'height') - original_y) + 'px';
+                        element.style.maxWidth = (valueInCss(parent, 'width') - original_x) + 'px';
+
+                    } else if (corners.classList.contains('tl')) {
+                        const new_width = original_width - (e.pageX - original_mouse_x)
+                        const new_height = original_height - (e.pageY - original_mouse_y)
+                        const new_x = original_x + (e.pageX - original_mouse_x)
+                        const new_y = original_y + (e.pageY - original_mouse_y)
+                        element.style.width = new_width + 'px';
+                        element.style.height = new_height + 'px';
+                        element.style.top = minmaxvalue(new_y, 0, valueInCss(parent, 'width')) + 'px';
+                        element.style.left = minmaxvalue(new_x, 0, valueInCss(parent, 'width')) + 'px';
+                        element.style.maxHeight = (valueInCss(parent, 'height') - original_y) + 'px';
+                        element.style.maxWidth = (valueInCss(parent, 'width') - original_x) + 'px';
+
+                    } else if (corners.classList.contains('tc')) {
+                        const new_height = original_height - (e.pageY - original_mouse_y)
+                        const new_y = original_y + (e.pageY - original_mouse_y)
+                        element.style.height = new_height + 'px';
+                        element.style.top = minmaxvalue(new_y, 0, valueInCss(parent, 'width')) + 'px';
+                        element.style.maxHeight = (valueInCss(parent, 'height') - original_y) + 'px';
+
+                    } else if (corners.classList.contains('bc')) {
+                        const new_height = original_height + (e.pageY - original_mouse_y)
+                        element.style.height = new_height + 'px';
+                        element.style.maxHeight = (valueInCss(parent, 'height') - original_y) + 'px';
+                    } else if (corners.classList.contains('lc')) {
+                        const new_width = original_width - (e.pageX - original_mouse_x)
+                        const new_x = original_x + (e.pageX - original_mouse_x)
+                        element.style.width = new_width + 'px';
+                        element.style.left = minmaxvalue(new_x, 0, valueInCss(parent, 'width')) + 'px';
+                        element.style.maxWidth = (valueInCss(parent, 'width') - original_x) + 'px';
+
+                    } else if (corners.classList.contains('rc')) {
+                        const new_width = original_width + (e.pageX - original_mouse_x)
+                        element.style.width = new_width + 'px';
+                        element.style.maxWidth = (valueInCss(parent, 'width') - original_x) + 'px';
+                    }
+                }
+                function stoprz() {
+                    window.removeEventListener('mousemove', rz)
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>
